@@ -1,0 +1,7 @@
+[package]
+name = "deck"
+version = "0.1.0"
+authors = ["Wadelma <>"]
+
+[dependencies]
+rand = "*"
