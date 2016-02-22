@@ -1,6 +1,7 @@
 extern crate rand;
 use rand::Rng;
 
+/// Deck of cards.
 #[derive(Clone, Debug)]
 pub struct Deck<C> {
     deck: Vec<C>,
@@ -32,9 +33,9 @@ impl<C> Deck<C> {
 
     pub fn discard<F: FnMut(&C) -> bool>(&mut self, mut fun: F) -> usize {
         let mut count = 0;
-        let mut n = self.deck.len() - 1;
-        while n >= self.cur {
-            if (fun)(&self.deck[n]) {
+        let mut n = self.deck.len();
+        while n > self.cur {
+            if (fun)(&self.deck[n - 1]) {
                 count += 1;
                 self.deck.swap(n, self.cur);
                 self.cur += 1;
@@ -43,6 +44,22 @@ impl<C> Deck<C> {
             }
         }
         count
+    }
+
+    pub fn push(&mut self, card: C) {
+        let last = self.deck.len();
+        self.deck.push(card);
+        self.deck.swap(self.cur, last);
+    }
+
+    pub fn pop(&mut self) -> Option<C> {
+        if self.deck.is_empty() {
+            None
+        } else {
+            let last = self.deck.len() - 1;
+            self.deck.swap(self.cur, last);
+            self.deck.pop()
+        }
     }
 
     pub fn draw(&mut self) -> Option<&C> {
@@ -55,20 +72,36 @@ impl<C> Deck<C> {
         }
     }
 
+    pub fn peek(&self) -> Option<&C> {
+        if self.deck.is_empty() {
+            None
+        } else {
+            Some(&self.deck[self.cur])
+        }
+    }
+
     pub fn shuffle<R: Rng>(&mut self, rng: &mut R) {
         rng.shuffle(&mut self.deck[..]);
         self.cur = 0;
     }
 
-    pub fn draw_and_suffle<R: Rng>(&mut self, rng: &mut R) -> &C {
+    pub fn draw_and_suffle<R: Rng>(&mut self, rng: &mut R) -> Option<&C> {
         let cur = self.cur;
-        if cur < self.deck.len() {
+        if self.deck.is_empty() {
+            None
+        } else if cur < self.deck.len() {
             self.cur += 1;
-            &self.deck[cur]
+            Some(&self.deck[cur])
         } else {
-            self.shuffle(rng);
-            self.draw_and_suffle(rng)
+            rng.shuffle(&mut self.deck[..]);
+            self.cur = 1;
+            Some(&self.deck[0])
         }
+    }
+
+    pub fn split(mut self) -> (Deck<C>, Deck<C>) {
+        let other_deck = self.deck.split_off(self.cur);
+        (self, Deck::from_cards(other_deck))
     }
 }
 
